@@ -1,0 +1,6 @@
+Metadata type,Members,Step,Order,Sprint,Version,Rule ID,Description,Developper Name,Last modified date
+ApexClass,AClass,1,2,,,,,,
+ApexClass,AnotherClass,1,2,,,,,,
+,,,,,,,,,
+ApexClass,ATrigger,1,2,,,,,,
+CustomLabel,A_LABEL,1,2,,,,,,

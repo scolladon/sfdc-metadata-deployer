@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ConnectedApp xmlns="http://soap.sforce.com/2006/04/metadata">
+    <contactEmail>your.administrator@you-org.com</contactEmail>
+    <label>Deployment</label>
+    <oauthConfig>
+        <callbackUrl>https://yournode.salesforce.com/apex/deployment</callbackUrl>
+        <consumerKey>akey</consumerKey>
+        <scopes>Api</scopes>
+    </oauthConfig>
+</ConnectedApp>
