@@ -4,7 +4,6 @@
     <label>Deployment</label>
     <oauthConfig>
         <callbackUrl>https://yournode.salesforce.com/apex/deployment</callbackUrl>
-        <consumerKey>akey</consumerKey>
         <scopes>Api</scopes>
     </oauthConfig>
 </ConnectedApp>
