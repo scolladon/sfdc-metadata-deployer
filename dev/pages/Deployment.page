@@ -5,18 +5,18 @@
     <title>Salesforce Metadata Deployment</title>
     <!-- Pace Loading -->
     <script>
-    var paceOptions = {
+    var Oauth2AppConfig = {
+      clientId : encodeURIComponent('<cliendId>'),
+      clientSecret : encodeURIComponent('<clientSecret>'),
+      redirectUri : encodeURIComponent('<callbackUrl>')
+    },
+    paceOptions = {
       restartOnRequestAfter: 10,
       restartOnPushState: true,
       ajax: {
         trackMethods: ['GET', 'POST', 'DELETE', 'PUT', 'PATCH']
       }
-    },
-    Oauth2AppConfig = {
-      clientId : encodeURIComponent('<cliendId>'),
-      clientSecret : encodeURIComponent('<clientSecret>'),
-      redirectUri : encodeURIComponent('<this page with the correct path related to your salesforce instance node>')
-    };
+    }
     </script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pace/1.0.2/pace.min.js"></script>
     <link rel="stylesheet" type="text/css" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css"></link>

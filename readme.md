@@ -10,14 +10,18 @@ This Library
 ============
 Allow to deploy from one org to another from a visualforce page.
 Take in input a csv file formatted like the example elements.csv.
-Or a package.xml without the first tag (<?xml version...?>)
+Or a package.xml without the first tag (<?xml version...?>).
 Works with modern browser ;)
 
 Installation
 ============
-1. Configure the connected App Deployment to have the correct callback url (the callback url has to be like https://<your_node>.salesforce.com/apex/deployment)
-2. put in the ApexPage Deployment the values "Client ID", "Client Secret" and "Callback URL" in the javascript variable "Oauth2AppConfig" (defined at the beginning of the page)
-3. you're done
+1. Configure the connected App Deployment to have the correct callback url (the callback url has to be like https://<your_node_instance>.salesforce.com/apex/deployment) : Setup => Create => Apps => (Connected App) Deployment.
+2. Copy "Client ID" value, "Client secret" value and "Callback URL" value.
+2. Put in the ApexPage Deployment the values previously copied "Client ID", "Client Secret" and "Callback URL" in the javascript variable "Oauth2AppConfig" (defined at the beginning of the page) : Setup => Develop => Page => Edit (Deployment).
+    * Client ID : Search for the string "<cliendId>" and put your "Client ID" value
+    * Client Secret : Search for the string "<clientSecret>" and put your "Client Secret" value
+    * Callback URL : Search for the string "<callbackUrl>" and put your "Callback URL" value
+3. you're done :)
 
 How To
 =======
