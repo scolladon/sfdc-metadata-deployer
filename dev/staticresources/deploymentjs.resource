@@ -1,7 +1,4 @@
-// TODO
-/*
-  allow giving github repo to see
-*/
+// TODO allow giving github repo to see
 jQuery.noConflict();
 jQuery(function(){
   var retrieve_config,
@@ -166,7 +163,7 @@ Deployment.prototype = function(){
 
         var types = that._package.types;
         results.data.shift();
-        results.data.forEach(function(row,i){
+        results.data.forEach(function(row){
           if(!row[0] && !row[1]){return;}
           var typename = row[0],
           member = row[1],

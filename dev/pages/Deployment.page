@@ -10,7 +10,7 @@
       clientSecret : encodeURIComponent('<clientSecret>'),
       redirectUri : encodeURIComponent('<callbackUrl>')
     },
-    paceOptions = {
+      paceOptions = {
       restartOnRequestAfter: 10,
       restartOnPushState: true,
       ajax: {
