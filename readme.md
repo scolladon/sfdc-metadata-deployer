@@ -1,11 +1,6 @@
 Salesforce Metadata Online Deployment Tool
 ==========================
 
-<a href="https://githubsfdeploy.herokuapp.com?owner=ForceComDeveloper&repo=sfdc-metadata-deployer">
-  <img alt="Deploy to Salesforce"
-       src="https://raw.githubusercontent.com/afawcett/githubsfdeploy/master/src/main/webapp/resources/img/deploy.png">
-</a>
-
 This Library
 ============
 Allow to deploy from one org to another from a visualforce page.
@@ -15,7 +10,11 @@ Works with modern browser ;)
 
 Installation
 ============
-1. Click the deploy button in this page and follow the deploy process.
+1. Click the deploy button and follow the deploy process.
+<a href="https://githubsfdeploy.herokuapp.com?owner=ForceComDeveloper&repo=sfdc-metadata-deployer">
+  <img alt="Deploy to Salesforce"
+       src="https://raw.githubusercontent.com/afawcett/githubsfdeploy/master/src/main/webapp/resources/img/deploy.png">
+</a>
 2. Connect to the org where you deployed the tool.
 3. Configure the connected App Deployment to have the correct callback url (the callback url has to be like https://<your_node_instance>.salesforce.com/apex/deployment) : Go to Setup => Create => Apps => (Connected App) Deployment.
 4. Copy "Client ID", "Client secret" and "Callback URL" values.
@@ -27,13 +26,8 @@ Installation
 
 How To Use
 ==========
-1. Select the retrieve environment (where the metadata will be retrieved)
-2. Select the deploy environment (where the metadata will be deployed)
-3. Upload you elements file (csv like the example from your team change tracking or a package.xml) via the input or by dropping the file
-4. Click on retrieve to retrieve the metadata. You will download the zip related file for archive purpose.
-5. Click on deploy to deploy the metadata.
-
-You can also drop a zip archive on the deploy button to instantly deploy already retrieved metadata (for flow deployment)
+1. Retrieve content by dropping CSV/XML file
+2. Deploy content by dropping ZIP file
 
 Version
 =======
