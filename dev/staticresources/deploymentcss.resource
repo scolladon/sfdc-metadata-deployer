@@ -1,6 +1,7 @@
 .pace {
   -webkit-pointer-events: none;
   pointer-events: none;
+
   -webkit-user-select: none;
   -moz-user-select: none;
   user-select: none;
@@ -81,4 +82,18 @@ p {
   width: 100%;
   word-break: break-word;
   margin-bottom: 15px;
+}
+
+/* skin.css Style*/
+.drop-zone {
+  color: #ccc;
+  border-style: dashed;
+  border-color: #ccc;
+  line-height: 200px;
+  text-align: center
+}
+
+.drop-zone.drop {
+  color: #222;
+  border-color: #222;
 }

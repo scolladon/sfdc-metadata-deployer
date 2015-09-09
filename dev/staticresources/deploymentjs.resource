@@ -1,117 +1,94 @@
-// TODO allow giving github repo to see
+// TODO
+/*
+  allow giving github repo to see
+  change environment
+*/
 jQuery.noConflict();
-jQuery(function(){
   var retrieve_config,
-      deploy_config,
-      accessToken_query = jQuery.getUrlVar('access_token'),
+  deploy_config;
+jQuery(function(){
+      var accessToken_query = jQuery.getUrlVar('access_token'),
       instanceUrl_query = jQuery.getUrlVar('instance_url'),
-      state = jQuery.getUrlVar('state');
-  window.history.pushState(null, "Salesforce Metadata Deployment", "/apex/deployment");
+      state = jQuery.getUrlVar('state'),
+      dep = new Deployment();
+  //window.history.pushState(null, "Salesforce Metadata Deployment", "/apex/deployment");
   if(typeof accessToken_query !== 'undefined'
   && typeof instanceUrl_query !== 'undefined'){
-    if(typeof state === 'undefined') {
-      retrieve_config = new Oauth2Settings(decodeURIComponent(instanceUrl_query),decodeURIComponent(accessToken_query));
-    } else {
-      deploy_config = new Oauth2Settings(decodeURIComponent(instanceUrl_query),decodeURIComponent(accessToken_query));
-      var state = JSON.parse(decodeURIComponent(state));
-      retrieve_config = new Oauth2Settings(state.instanceUrl,state.accessToken);
+    if(typeof state !== 'undefined') {
+      state = JSON.parse(decodeURIComponent(state));
+      if(state.status === '0') {
+        retrieve_config = new Oauth2Settings(decodeURIComponent(instanceUrl_query),decodeURIComponent(accessToken_query));
+        dep = new Deployment(retrieve_config,deploy_config);
+        var package = JSON.parse(sessionStorage.getItem('package'));
+        console.log(JSON.stringify(package));
+        console.log('package');
+        dep.doRetrieve(package);
+      } else if(state.status === '1') {
+        deploy_config = new Oauth2Settings(decodeURIComponent(instanceUrl_query),decodeURIComponent(accessToken_query));
+        retrieve_config = new Oauth2Settings(state.instanceUrl,state.accessToken);
+        dep = new Deployment(retrieve_config,deploy_config);
+        // TODO store options :(
+        var options = {};
+        options.testLevel = jQuery('.radio :checked').val();
+        options.rollbackOnError = jQuery('#rollback').is(':checked');
+        options.checkOnly = jQuery('#check').is(':checked');
+        dep.deployPackage(options);
+      }
     }
   }
-  if(!retrieve_config) {
-    jQuery('#retrieve-setup-button').click(function(){
-      var url = 'https://'+(jQuery('#retrieve-prod').is(':checked') ? 'login' : 'test') + '.salesforce.com/services/oauth2/authorize?response_type=token&client_id='+Oauth2AppConfig.clientId+'&redirect_uri='+Oauth2AppConfig.redirectUri+'&prompt=login&display=popup';
-      window.open(url,'_self')
-    });
-    jQuery('.retrieve-setup').show(500);
-  } else if(!deploy_config) {
-
-    var url = 'https://'+(jQuery('#deploy-prod').is(':checked') ? 'login' : 'test') + '.salesforce.com/services/oauth2/authorize?response_type=token&client_id='+Oauth2AppConfig.clientId+'&redirect_uri='+Oauth2AppConfig.redirectUri+'&prompt=login&display=popup&state='+encodeURIComponent(JSON.stringify(retrieve_config));
-    jQuery('#deploy-setup-button').click(function(){
-      window.open(url,'_self')
-    });
-    jQuery('.deploy-setup').show(500);
-  }
   // Add all evenment on the page
-  else {
-    var dep = new Deployment(retrieve_config,deploy_config);
-    jQuery('#fileToUpload').change(function(){
-        var input = jQuery(this),
-            label = input.val().replace(/\\/g, '/').replace(/.*\//, '');
-        var name = input.parents('.input-group').find(':text');
-        name.val(label);
-        dep.createPackage(input.prop('files')[0]);
-        this.value = null;
-    });
-    jQuery('#retrieve-button').click(function(){
-        dep.retrievePackage();
-    });
-    jQuery('#deploy-button').click(function(){
-      var options = {};
-      options.testLevel = jQuery('.radio :checked').val();
-      options.rollbackOnError = jQuery('#rollback').is(':checked');
-      options.checkOnly = jQuery('#check').is(':checked');
-      dep.deployPackage(options);
-    });
-
-    // Drop handling :
-    jQuery('.drop-zone').on('dragenter', function() {
-      jQuery(this).css('border', '3px dashed #BBBBBB');
-      return false;
-    });
-
-    jQuery('.drop-zone').on('dragover', function(e){
-      e.preventDefault();
-      e.stopPropagation();
-      jQuery(this).css('border', '3px dashed #BBBBBB');
-      return false;
-    });
-
-    jQuery('.drop-zone').on('dragleave', function(e) {
-      e.preventDefault();
-      e.stopPropagation();
-      jQuery(this).css('border', '');
-      return false;
-    });
-
-    jQuery('#deploy').on('drop', function(e) {
-      if(e.originalEvent.dataTransfer){
-        if(e.originalEvent.dataTransfer.files.length) {
-           // Stop the propagation of the event
-          e.preventDefault();
-          e.stopPropagation();
-           // Main function to upload
-          var f = e.originalEvent.dataTransfer.files[0];
-          var reader = new FileReader();
-          reader.onload = function(){
-            dep._zipContent = btoa(e.target.result);
-            var options = {};
-            options.testLevel = jQuery('.radio :checked').val();
-            options.rollbackOnError = jQuery('#rollback').is(':checked');
-            options.checkOnly = jQuery('#check').is(':checked');
-            dep.deployPackage(options);
-          };
-          reader.readAsBinaryString(f);
-        }
+  jQuery('.deploy').on('drop', function(e) {
+    sessionStorage.removeItem('package');
+    if(e.originalEvent.dataTransfer){
+      if(e.originalEvent.dataTransfer.files.length) {
+         // Stop the propagation of the event
+        e.preventDefault();
+        e.stopPropagation();
+         // Main function to upload
+        var file = e.originalEvent.dataTransfer.files[0];
+        var reader = new FileReader();
+        reader.onload = function(){
+          sessionStorage.setItem('zip', btoa(e.target.result));
+          // TODO check if it is a zip file
+          var options = {};
+          options.testLevel = jQuery('.radio :checked').val();
+          options.rollbackOnError = jQuery('#rollback').is(':checked');
+          options.checkOnly = jQuery('#check').is(':checked');
+          dep.deployPackage(options);
+        };
+        reader.readAsBinaryString(file);
       }
-      jQuery(this).css('border', '');
-      return false;
-    });
+    }
+    jQuery(this).css('border', '');
+    return false;
+  });
 
-    jQuery('#upload').on('drop', function(e) {
-      if(e.originalEvent.dataTransfer){
-         if(e.originalEvent.dataTransfer.files.length) {
-           // Stop the propagation of the event
-           e.preventDefault();
-           e.stopPropagation();
-           // Main function to upload
-           dep.createPackage(e.originalEvent.dataTransfer.files[0]);
-         }
-      }
-      jQuery(this).css('border', '');
-      return false;
-    });
-    jQuery('.process-form').show(500);
-  }
+  jQuery('.retrieve').on('drop', function(e) {
+    console.log('dropped');
+    console.log(e);
+    if(e.originalEvent.dataTransfer){
+       if(e.originalEvent.dataTransfer.files.length) {
+         // Stop the propagation of the event
+         e.preventDefault();
+         e.stopPropagation();
+         dep.retrievePackage(e.originalEvent.dataTransfer.files[0]);
+       }
+    }
+    jQuery(this).css('border', '');
+    return false;
+  });
+
+  jQuery(".drop-zone").on("dragover", function(event) {
+    event.preventDefault();
+    event.stopPropagation();
+    jQuery(this).addClass('drop');
+  });
+
+  jQuery(".drop-zone").on("dragleave", function(event) {
+    event.preventDefault();
+    event.stopPropagation();
+    jQuery(this).removeClass('drop');
+  });
 });
 
 var Oauth2Settings = function(instanceUrl,accessToken) {
@@ -120,48 +97,44 @@ var Oauth2Settings = function(instanceUrl,accessToken) {
 }
 
 /*
-	Deployment class
+  Deployment class
 */
 var Deployment = function(retrieve_config,deploy_config) {
-  this._package = {};
-  this._zipContent = {};
   this._tests = [];
-  this._file;
-  this.retrieveConn = new jsforce.Connection({
-    instanceUrl : retrieve_config.instanceUrl,
-    accessToken : retrieve_config.accessToken,
-    proxyUrl : '/services/proxy'
-  });
-  this.retrieveConn.metadata.pollTimeout= 300000;
-  this.deployConn = new jsforce.Connection({
-    instanceUrl : deploy_config.instanceUrl,
-    accessToken : deploy_config.accessToken,
-    proxyUrl : '/services/proxy'
-  });
-  this.deployConn.metadata.pollTimeout= 300000;
+  this.retrieveConn;
+  this.deployConn;
+  if(typeof retrieve_config !== 'undefined'){
+    this.retrieveConn = new jsforce.Connection({
+      instanceUrl : retrieve_config.instanceUrl,
+      accessToken : retrieve_config.accessToken,
+      proxyUrl : '/services/proxy'
+    });
+    this.retrieveConn.metadata.pollTimeout= 3000000;
+  }
+  if(typeof deploy_config !== 'undefined'){
+    this.deployConn = new jsforce.Connection({
+      instanceUrl : deploy_config.instanceUrl,
+      accessToken : deploy_config.accessToken,
+      proxyUrl : '/services/proxy'
+    });
+    this.deployConn.metadata.pollTimeout= 3000000;
+  }
 }
 
 Deployment.prototype = function(){
 
   // Private members
-  var createPackageCSV = function(){
-    var reader = new FileReader();
+  var createPackageCSV = function(file){
     var that = this;
-    reader.readAsText(that._file);
-    reader.onloadend = function(e){
-      jQuery('#content-upload-info').html('<p>'+e.target.result+'</p>');
-      jQuery('#content-upload-success').html('<p>File ok</p>');
-      jQuery('#content-upload-info').show(500);
-    }
-    Papa.parse(that._file, {
+    Papa.parse(file, {
       complete: function(results) {
         // init
-        that._package = {}
-        that._package.types = [];
-        that._package.version = '34.0';
+        var package = {}
+        package.types = [];
+        package.version = '34.0';
         that._tests = [];
 
-        var types = that._package.types;
+        var types = package.types;
         results.data.shift();
         results.data.forEach(function(row){
           if(!row[0] && !row[1]){return;}
@@ -187,97 +160,128 @@ Deployment.prototype = function(){
               that._tests.push(member);
             }
           }
-          jQuery('#content-retrieve-info').html('<p>' + JSON.stringify(that._package, null,1) + '</p>');
-          jQuery('.retrieve-process').show(500);
         });
+        doRetrieve.call(that, package);
       }
     });
   },
 
-  createPackageXML = function(){
+  createPackageXML = function(file){
     var that = this;
     var reader = new FileReader();
-    reader.readAsText(that._file);
     reader.onloadend = function(e){
       var content = e.target.result;
-      jQuery('#content-upload-info').html('<p>'+htmlSpecialChars(content)+'</p>').show(500);
+      console.log(content);
       try{
+        if(content.indexOf('<?xml') !== -1){ // TODO make it works
+          jQuery('.retrieve-message').append('<p class="list-group-item list-group-item-error"><span class="badge alert-error pull-right">Error</span>Remove the "<?>" tags</p>').show(500);
+          return;
+        }
         var package = getPropertyCaseInsensitive(jQuery.xml2json(content),'package');
         delete package.$;
+        console.log(package);
+        // TODO Implement tests remember
+        if(package.types.constructor !== Array) {
+          var type = package.types;
+          package.types = [];
+          package.types.push(type);
+        }
         package.types.forEach(function(type){
           delete type.$;
           if(typeof type.members !== 'object') {
             type.members = [type.members];
           }
-        })
-        that._package = package;
+        });
+        doRetrieve.call(that,package);
       } catch(e){
-        jQuery('#error-upload').html('<p>' + htmlSpecialChars(''+e) + '</p>').show(500);
-        return;
+        console.log(e);
+        jQuery('.retrieve-message').append('<p class="list-group-item list-group-item-error"><span class="badge alert-error pull-right">Error</span>'+htmlSpecialChars(''+e)+'</p>').show(500);
       }
-      jQuery('#content-upload-success').html('<p>File ok</p>');
-      jQuery('#content-retrieve-info').html('<p>' + JSON.stringify(that._package, null,1) + '</p>');
-      jQuery('.retrieve-process').show(500);
     };
+    reader.readAsText(file);
   },
 
   // Public members
-  createPackage = function(file){
-    jQuery('#error-upload').html('');
+  retrievePackage = function(file){
     if (!file) {
         var error = 'No file selected';
-        jQuery('#error-upload').html('<p>'+error+'</p>');
+         jQuery('.retrieve-message').append('<p class="list-group-item list-group-item-error"><span class="badge alert-error pull-right">Error</span>'+error+'</p>').show(500);
         return;
     }
-    this._file = file;
     if(file.type === 'text/csv'){
-      createPackageCSV.call(this);
+      createPackageCSV.call(this, file);
     } else if(file.type === 'text/xml') {
-      createPackageXML.call(this);
+      createPackageXML.call(this, file);
     }
-  },
-
-  retrievePackage = function() {
-    var that = this;
-    this.retrieveConn.metadata.retrieve({ unpackaged:this._package })
-    .complete(function(err, result) {
-      if (err) { jQuery('#error-retrieve').html('<p>'+err+'</p>'); return;}
-      var a = document.createElement('a'); a.href = "data:application/zip;base64," + result.zipFile; a.download = (new Date()).toLocaleString()+'.zip'; a.click();
-      that._zipContent = result.zipFile;
-      jQuery('#content-retrieve-success').html("<p>Statut : "+result.status+'</p>');
-      jQuery('.deployment-process').show(500);
-    });
   },
 
   deployPackage = function(options) {
     var that = this;
+    if(typeof this.deployConn === 'undefined') {
+      var state = {
+        status : '1',
+        instanceUrl : retrieve_config.instanceUrl,
+        accessToken : retrieve_config.accessToken
+      };
+      var url = 'https://'+(jQuery('#retrieve-prod').is(':checked') ? 'login' : 'test') + '.salesforce.com/services/oauth2/authorize?response_type=token&client_id='+Oauth2AppConfig.clientId+'&redirect_uri='+Oauth2AppConfig.redirectUri+'&prompt=login&display=popup&state='+encodeURIComponent(JSON.stringify(state));
+      window.open(url,'_self');
+      return;
+    }
+
     if(options.testLevel === 'RunSpecifiedTests') {
       options.runTests = this._tests;
     }
-    this.deployConn.metadata.deploy(that._zipContent, options)
+    this.deployConn.metadata.deploy(sessionStorage.getItem('zip'), options)
     .complete(function(err, result) {
-      if (err) { jQuery('#error-deploy').html('<p>'+err+'</p>'); return;}
-      jQuery('#content-deploy-success').html('<p>'+result.status+'</p>');
-      jQuery('#content-deploy-info').html('<p>'+
+      if (err) {
+        jQuery('.deploy-message').append('<p class="list-group-item list-group-item-error"><span class="badge alert-error pull-right">Error</span>'+err+'</p>').show(500);
+        return;
+      }
+      jQuery('.deploy-message').append('<p class="list-group-item list-group-item-success"><span class="badge alert-success pull-right">Success</span>'+result.status+'</p>').show(500);
+      jQuery('#deploy-info').html('<p>'+
           'done ? :' + result.done + ', \n'
       + 'success ? : ' + result.true + ', \n'
       + 'state : ' + result.state + ', \n'
       + 'component errors: ' + result.numberComponentErrors + ', \n'
       + 'components deployed: ' + result.numberComponentsDeployed + ', \n'
       + 'tests completed: ' + result.numberTestsCompleted
-      +'</p>');
-      jQuery('#content-deploy-info').show(500);
+      +'</p>').show(500);
       that.deployConn.metadata.checkDeployStatus(result.id,true,function(error,res){
-        if (err) { jQuery('#error-deploy').html('<p>'+error+'</p>'); return;}
-        jQuery('#content-deploy-info').append('<p>'+JSON.stringify(res.details,null,1)+'</p>');
+        if (err) {
+          jQuery('.deploy-message').append('<p class="list-group-item list-group-item-error"><span class="badge alert-error pull-right">Error</span>'+err+'</p>').show(500);
+          return;
+        }
+        jQuery('#deploy-info').append('<p>'+JSON.stringify(res.details,null,1)+'</p>');
       })
+    });
+  },
+
+  doRetrieve = function(package) {
+    var that = this;
+    if(typeof this.retrieveConn === 'undefined') {
+      sessionStorage.setItem('package',JSON.stringify(package));
+      var state = {status : '0'};
+      var url = 'https://'+(jQuery('#retrieve-prod').is(':checked') ? 'login' : 'test') + '.salesforce.com/services/oauth2/authorize?response_type=token&client_id='+Oauth2AppConfig.clientId+'&redirect_uri='+Oauth2AppConfig.redirectUri+'&prompt=login&display=popup&state='+encodeURIComponent(JSON.stringify(state));
+      window.open(url,'_self');
+      return;
+    }
+    jQuery('.retrieve-message').append('<p class="list-group-item list-group-item-success"><span class="badge alert-success pull-right">Success</span>Package parsed</p>').show(500);
+    jQuery('.retrieve-info').html(JSON.stringify(package, null,1)).show(500);
+    this.retrieveConn.metadata.retrieve({ unpackaged:package })
+    .complete(function(err, result) {
+      if (err) {
+        jQuery('.retrieve-message').append('<p class="list-group-item list-group-item-error"><span class="badge alert-error pull-right">Error</span>'+err+'</p>').show(500);
+        return;
+      }
+      var a = document.createElement('a'); a.href = "data:application/zip;base64," + result.zipFile; a.download = (new Date()).toLocaleString()+'.zip'; a.click();
+      jQuery('.retrieve-message').append('<p class="list-group-item list-group-item-success"><span class="badge alert-success pull-right">Success</span>'+result.status+'</p>').show(500);
     });
   };
 
   return {
-    createPackage : createPackage,
     retrievePackage : retrievePackage,
-    deployPackage : deployPackage
+    deployPackage : deployPackage,
+    doRetrieve : doRetrieve
   };
 }();
 

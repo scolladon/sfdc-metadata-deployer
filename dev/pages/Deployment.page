@@ -5,18 +5,18 @@
     <title>Salesforce Metadata Deployment</title>
     <!-- Pace Loading -->
     <script>
-    var Oauth2AppConfig = {
-      clientId : encodeURIComponent('<cliendId>'),
-      clientSecret : encodeURIComponent('<clientSecret>'),
-      redirectUri : encodeURIComponent('<callbackUrl>')
-    },
-      paceOptions = {
+    var paceOptions = {
       restartOnRequestAfter: 10,
       restartOnPushState: true,
       ajax: {
         trackMethods: ['GET', 'POST', 'DELETE', 'PUT', 'PATCH']
       }
-    }
+    },
+    Oauth2AppConfig = {
+      clientId : encodeURIComponent('3MVG9rKhT8ocoxGnFmZ8eN5i5ikQ0EV39D5zDfM38NKYhWiZHVHh.FxHXbPQsCSKx0p95ihwkLDF81ULNIDne'),
+      clientSecret : encodeURIComponent('1714280654813022914'),
+      redirectUri : encodeURIComponent('https://cs80.salesforce.com/apex/deployment')
+    };
     </script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pace/1.0.2/pace.min.js"></script>
     <link rel="stylesheet" type="text/css" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css"></link>
@@ -27,7 +27,8 @@
     <!-- Script loading -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/4.1.2/papaparse.min.js" async="async"></script>
     <script src="https://cdn.rawgit.com/google/code-prettify/master/loader/run_prettify.js" async="async"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jsforce/1.5.0/jsforce.min.js" defer="defer"></script>
+    <!--<script src="https://cdnjs.cloudflare.com/ajax/libs/jsforce/1.5.0/jsforce.min.js" defer="defer"></script>-->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jsforce/1.5.0/jsforce.js" defer="defer"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/2.0.3/jquery.min.js" defer="defer"></script>
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js" defer="defer"></script>
     <script src="https://cdn.rawgit.com/sparkbuzz/jQuery-xml2json/master/src/xml2json.js" defer="defer"></script>
@@ -43,6 +44,12 @@
           <ul class="nav navbar-nav navbar-right">
             <li><a href="/home/home.jsp">Home</a>
             </li>
+            <li><a href="/apex/Deployment">Deployment</a>
+            </li>
+            <li><a href="/apex/TestCoverage">Test Coverage</a>
+            </li>
+            <li><a href="/apex/DMS_Checker">DMS</a>
+            </li>
           </ul>
         </div>
       </div>
@@ -55,65 +62,38 @@
       </div>
     </div>
     <div class="container">
-      <div class="row retrieve-setup" style="display:none;">
-        <div class="col-lg-12">
-          <div class="row">
-            <button id="retrieve-setup-button" class="btn btn-primary">Retrieve Setup</button>
+      <div class="row">
+        <div class="col-lg-5 ">
+          <div class="row retrieve drop-zone">
+            <p class="info">Retrieve from CSV/XML file</p>
+          </div>
+          <div class='row'>
+            <div class="checkbox">
+              <label>
+                <input type="checkbox" id="retrieve-prod" /> Retrieve from production
+              </label>
+            </div>
           </div>
           <div class="row">
-            <label>
-              <input type="checkbox" value="" id="retrieve-prod" /> Retrieve from production Org
-            </label>
-        </div>
-        </div>
-      </div>
-      <div class="row deploy-setup" style="display:none;">
-        <div class="col-lg-12">
-          <div class="row">
-            <button id="deploy-setup-button" class="btn btn-primary">Deploy Setup</button>
-          </div>
-          <div class="row">
-            <label>
-              <input type="checkbox" value="" id="deploy-prod" /> Deploy to production Org
-            </label>
-          </div>
-        </div>
-      </div>
-      <div class="row process-form" style="display:none;">
-        <div id='upload' class="col-lg-3 drop-zone">
-          <div class="input-group">
-            <span class="input-group-btn">
-                          <span class="btn btn-primary btn-file">Package…<input type="file" name="fileToUpload" id="fileToUpload"/>
-                          </span>
-            </span>
-            <input type="text" class="form-control" readonly="true" />
-          </div>
-          <div id='error-upload' class="bg-danger">
-          </div>
-          <div id='content-upload-success' class="bg-success">
-          </div>
-          <pre class="prettyprint bg-info" id="content-upload-info" style="display:none;"></pre>
-        </div>
-        <div class="col-lg-1"></div>
-        <div id='retrieve' class="col-lg-3">
-          <div class="row">
-            <button id="retrieve-button" class="btn btn-primary">Retrieve</button>
-          </div>
-          <div class="row retrieve-process" style="display:none;">
+            <div class="retrieve-message list-group">
 
-            <div id='error-retrieve' class="bg-danger">
             </div>
-            <div id="content-retrieve-success" class="bg-success">
-            </div>
-            <pre class="prettyprint bg-info" id="content-retrieve-info"></pre>
+            <pre class="prettyprint retrieve-info" style="display:none;"></pre>
           </div>
         </div>
-        <div class="col-lg-1"></div>
-        <div id='deploy' class="col-lg-3 drop-zone">
-          <div class="row">
-            <button id="deploy-button" class="btn btn-primary">Deploy</button>
+        <div class="col-lg-2 "></div>
+        <div class="col-lg-5">
+          <div class="row deploy drop-zone">
+              <p class="info">Deploy from zip file</p>
           </div>
-          <div class="row deployment-process" style="display:none;">
+          <div class='row'>
+            <div class="checkbox">
+              <label>
+                <input type="checkbox" id="deploy-prod" /> Deploy to production
+              </label>
+            </div>
+          </div>
+          <div class="row">
             <h4>Options</h4>
             <div class="checkbox">
               <label>
@@ -154,13 +134,11 @@
             </div>
           </div>
           <div class="row">
-            <div id="error-deploy" class="bg-danger">
+            <div class="deploy-message list-group">
+
             </div>
-            <div id="content-deploy-success" class="bg-success">
-            </div>
-            <pre class="prettyprint " id="content-deploy-info" style="display:none;"></pre>
+            <pre class="prettyprint deploy-info" style="display:none;"></pre>
           </div>
-          <div class="col-lg-1"></div>
         </div>
       </div>
       <div class="navbar navbar-fixed-bottom">
