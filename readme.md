@@ -4,8 +4,7 @@ Salesforce Metadata Online Deployment Tool
 This Library
 ============
 Allow to deploy from one org to another from a visualforce page.
-Take in input a csv file formatted like the example elements.csv.
-Or a package.xml without the first tag (<?xml version...?>).
+Take in input a csv file formatted like the example elements.csv or a package.xml.
 Works with modern browser ;)
 
 Installation
