@@ -17,11 +17,10 @@ Installation
 </a>
 2. Connect to the org where you deployed the tool.
 3. Configure the connected App Deployment to have the correct callback url (the callback url has to be like https://<your_node_instance>.salesforce.com/apex/deployment) : Go to Setup => Create => Apps => (Connected App) Deployment.
-4. Copy "Client ID", "Client secret" and "Callback URL" values.
-5. Put in the ApexPage Deployment the values previously copied in the javascript variable "Oauth2AppConfig" (defined at the beginning of the page) : Setup => Develop => Page => Edit (Deployment).
-    * Client ID : Search for the string *<cliendId>* and put your "Client ID" value
-    * Client Secret : Search for the string *<clientSecret>* and put your "Client Secret" value
-    * Callback URL : Search for the string *<callbackUrl>* and put your "Callback URL" value
+4. Copy "Client ID" and "Callback URL" values.
+5. Put in the javascript variable "ConnectedAppConfig" in the ApexPage Deployment the values previously copied (defined at the beginning of the page) : Setup => Develop => Page => Edit (Deployment).
+    * Client ID : Search for the string *&lt;cliendId&gt;* and put your "Client ID" value
+    * Callback URL : Search for the string *&lt;callbackUrl&gt;* and put your "Callback URL" value
 6. you're done :)
 
 How To Use
@@ -31,7 +30,7 @@ How To Use
 
 Version
 =======
-1.0.0
+1.0.1
 
 Tech
 ====
@@ -42,7 +41,7 @@ Here the open source project used:
 * [bootstrap] - the most popular HTML, CSS, and JS framework for developing responsive, mobile first projects on the web
 * [pace] - an automatic web page progress bar
 * [papaparse] - the powerful, in-browser CSV parser for big boys and girls
-* [run prettify] - a Javascript module and CSS file that allows syntax highlighting of source code snippets in an html page.
 * [jQuery] - duh
 * [xml2json] - a simple jQuery plugin that converts XML data
 * [Gulp] - the streaming build system
+* [lz-string] - JavaScript compression, fast!
