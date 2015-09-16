@@ -84,8 +84,8 @@ p {
   margin-bottom: 15px;
 }
 
-/* skin.css Style*/
 .drop-zone {
+  border-radius: 15px;
   color: #ccc;
   border-style: dashed;
   border-color: #ccc;
@@ -94,6 +94,7 @@ p {
 }
 
 .drop-zone.drop {
+  border-radius: 15px;
   color: #222;
   border-color: #222;
 }

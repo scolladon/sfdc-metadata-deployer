@@ -3,35 +3,26 @@
   <head>
     <meta charset="UTF-8"></meta>
     <title>Salesforce Metadata Deployment</title>
-    <!-- Pace Loading -->
     <script>
-    var paceOptions = {
-      restartOnRequestAfter: 10,
-      restartOnPushState: true,
-      ajax: {
-        trackMethods: ['GET', 'POST', 'DELETE', 'PUT', 'PATCH']
-      }
-    },
-    Oauth2AppConfig = {
-      clientId : encodeURIComponent('3MVG9rKhT8ocoxGnFmZ8eN5i5ikQ0EV39D5zDfM38NKYhWiZHVHh.FxHXbPQsCSKx0p95ihwkLDF81ULNIDne'),
-      clientSecret : encodeURIComponent('1714280654813022914'),
-      redirectUri : encodeURIComponent('https://cs80.salesforce.com/apex/deployment')
+    var ConnectedAppConfig = {
+      clientId : '<clientId>',
+      redirectUri : '<callbackUrl>'
     };
     </script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pace/1.0.2/pace.min.js"></script>
+    <!-- Pace Loading -->
+    <script data-pace-options='{ "ajax": { "trackMethods": ["GET","POST"]}, "restartOnRequestAfter": 10, "restartOnPushState": true}' src="https://cdnjs.cloudflare.com/ajax/libs/pace/1.0.2/pace.min.js"></script>
     <link rel="stylesheet" type="text/css" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css"></link>
 
     <!-- Stylesheet loading -->
     <link rel="stylesheet" type="text/css" href="{!$Resource.deploymentcss}"></link>
 
     <!-- Script loading -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/4.1.2/papaparse.min.js" async="async"></script>
-    <script src="https://cdn.rawgit.com/google/code-prettify/master/loader/run_prettify.js" async="async"></script>
-    <!--<script src="https://cdnjs.cloudflare.com/ajax/libs/jsforce/1.5.0/jsforce.min.js" defer="defer"></script>-->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jsforce/1.5.0/jsforce.js" defer="defer"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/lz-string/1.4.4/base64-string.min.js" async="async"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jsforce/1.5.0/jsforce.min.js" defer="async"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/2.0.3/jquery.min.js" defer="defer"></script>
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js" defer="defer"></script>
     <script src="https://cdn.rawgit.com/sparkbuzz/jQuery-xml2json/master/src/xml2json.js" defer="defer"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/4.1.2/papaparse.min.js" defer="defer"></script>
     <script src="{!$Resource.deploymentjs}" defer="defer"></script>
   </head>
   <body id="deployment-content">
@@ -70,15 +61,13 @@
           <div class='row'>
             <div class="checkbox">
               <label>
-                <input type="checkbox" id="retrieve-prod" /> Retrieve from production
+                <input type="checkbox" id="retrieve-prod" />Retrieve from production
               </label>
             </div>
+            <button id="retrieve-reset" class="btn btn-danger" type="reset">Reset</button>
           </div>
           <div class="row">
-            <div class="retrieve-message list-group">
-
-            </div>
-            <pre class="prettyprint retrieve-info" style="display:none;"></pre>
+            <div class="retrieve-message"></div>
           </div>
         </div>
         <div class="col-lg-2 "></div>
@@ -89,20 +78,21 @@
           <div class='row'>
             <div class="checkbox">
               <label>
-                <input type="checkbox" id="deploy-prod" /> Deploy to production
+                <input type="checkbox" id="deploy-prod" />Deploy to production
               </label>
             </div>
+            <button id="deploy-reset" class="btn btn-danger" type="reset">Reset</button>
           </div>
           <div class="row">
             <h4>Options</h4>
             <div class="checkbox">
               <label>
-                <input type="checkbox" value="checkOnly" id="check" /> Check Only
+                <input type="checkbox" value="checkOnly" id="check" />Check Only
               </label>
             </div>
             <div class="checkbox">
               <label>
-                <input type="checkbox" value="rollbackOnError" id="rollback" /> Rollback on Error
+                <input type="checkbox" value="rollbackOnError" id="rollback" />Rollback on Error
               </label>
             </div>
             <div class="checkbox">
@@ -113,31 +103,28 @@
             <div class="radios" id="testRadio">
               <div class="radio">
                 <label>
-                  <input type="radio" name="optionsRadios" id="noTest" value="NoTestRun" checked="true" /> No test run
+                  <input type="radio" name="optionsRadios" id="noTest" value="NoTestRun" checked="true" />No test run
                 </label>
               </div>
               <div class="radio">
                 <label>
-                  <input type="radio" name="optionsRadios" id="runSpecific" value="RunSpecifiedTests" /> Run Specified tests
+                  <input type="radio" name="optionsRadios" id="runSpecific" value="RunSpecifiedTests" />Run Specified tests
                 </label>
               </div>
               <div class="radio">
                 <label>
-                  <input type="radio" name="optionsRadios" id="runLocal" value="RunLocalTests" /> Run Local tests
+                  <input type="radio" name="optionsRadios" id="runLocal" value="RunLocalTests" />Run Local tests
                 </label>
               </div>
               <div class="radio">
                 <label>
-                  <input type="radio" name="optionsRadios" id="runAll" value="RunAllTestsInOrg" /> Run All tests in Org
+                  <input type="radio" name="optionsRadios" id="runAll" value="RunAllTestsInOrg" />Run All tests in Org
                 </label>
               </div>
             </div>
           </div>
           <div class="row">
-            <div class="deploy-message list-group">
-
-            </div>
-            <pre class="prettyprint deploy-info" style="display:none;"></pre>
+            <div class="deploy-message"></div>
           </div>
         </div>
       </div>

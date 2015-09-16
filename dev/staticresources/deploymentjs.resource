@@ -1,80 +1,85 @@
-// TODO
 /*
-  allow giving github repo to see
-  change environment
+TODO
+  - Handle deconnexion :)
+  - Handle deletion (pre and post)
+  - Allow giving github repo to see
 */
 jQuery.noConflict();
-  var retrieve_config,
-  deploy_config;
 jQuery(function(){
-      var accessToken_query = jQuery.getUrlVar('access_token'),
-      instanceUrl_query = jQuery.getUrlVar('instance_url'),
-      state = jQuery.getUrlVar('state'),
-      dep = new Deployment();
+  var dep = new Deployment(),
+      at = jQuery.getUrlVar('access_token'),
+      iu = jQuery.getUrlVar('instance_url');
+  if(at && iu) {
+    var state = JSON.parse(decodeURIComponent(jQuery.getUrlVar('state')));
+    localStorage.setItem(state.prefix,JSON.stringify({accessToken:decodeURIComponent(at),instanceUrl:decodeURIComponent(iu)}));
+    jQuery('#'+state.prefix+'-prod').prop('checked', state.env === 'login');
+    var options = {env:state.env};
+    if(state.prefix === 'retrieve') {
+      dep.retrievePackage(options)
+      .then(HandleRetrieve.success)
+      .catch(HandleRetrieve.error);
+    } else if (state.prefix === 'deploy') {
+      dep.deployPackage(options)
+      .then(HandleDeploy.success)
+      .catch(HandleDeploy.error);
+    }
+  }
   //window.history.pushState(null, "Salesforce Metadata Deployment", "/apex/deployment");
-  if(typeof accessToken_query !== 'undefined'
-  && typeof instanceUrl_query !== 'undefined'){
-    if(typeof state !== 'undefined') {
-      state = JSON.parse(decodeURIComponent(state));
-      if(state.status === '0') {
-        retrieve_config = new Oauth2Settings(decodeURIComponent(instanceUrl_query),decodeURIComponent(accessToken_query));
-        dep = new Deployment(retrieve_config,deploy_config);
-        var package = JSON.parse(sessionStorage.getItem('package'));
-        console.log(JSON.stringify(package));
-        console.log('package');
-        dep.doRetrieve(package);
-      } else if(state.status === '1') {
-        deploy_config = new Oauth2Settings(decodeURIComponent(instanceUrl_query),decodeURIComponent(accessToken_query));
-        retrieve_config = new Oauth2Settings(state.instanceUrl,state.accessToken);
-        dep = new Deployment(retrieve_config,deploy_config);
-        // TODO store options :(
+  jQuery('#retrieve-prod').change(function(){
+    OAuthHelper.resetConn('retrieve');
+  });
+
+  jQuery('#retrieve-reset').click(function(){
+    OAuthHelper.resetConn('retrieve');
+  });
+
+  jQuery('#deploy-prod').change(function(){
+    OAuthHelper.resetConn('deploy');
+  });
+
+  jQuery('#deploy-reset').click(function(){
+    OAuthHelper.resetConn('deploy');
+  });
+
+  jQuery('.deploy').on('drop', function(e) {
+    if(e.originalEvent.dataTransfer
+      && e.originalEvent.dataTransfer.files.length){
+      var file = e.originalEvent.dataTransfer.files[0];
+      var read = new Promise(function(rs,rj) {
+        var reader = new FileReader();
+        reader.onerror = rj;
+        reader.onload = rs;
+        reader.readAsBinaryString(file);
+      })
+      e.preventDefault();
+      e.stopPropagation();
+      read.then(function(resolve,reject) {
+        sessionStorage.setItem('zip', Base64String.compress(btoa(e.target.result)));
         var options = {};
         options.testLevel = jQuery('.radio :checked').val();
         options.rollbackOnError = jQuery('#rollback').is(':checked');
         options.checkOnly = jQuery('#check').is(':checked');
-        dep.deployPackage(options);
-      }
+        options.env = jQuery('#deploy-prod').is(':checked') ? 'login' : 'test';
+        dep.deployPackage(options)
+        .then(HandleDeploy.success)
+        .catch(HandleDeploy.error);
+      });
     }
-  }
-  // Add all evenment on the page
-  jQuery('.deploy').on('drop', function(e) {
-    sessionStorage.removeItem('package');
-    if(e.originalEvent.dataTransfer){
-      if(e.originalEvent.dataTransfer.files.length) {
-         // Stop the propagation of the event
-        e.preventDefault();
-        e.stopPropagation();
-         // Main function to upload
-        var file = e.originalEvent.dataTransfer.files[0];
-        var reader = new FileReader();
-        reader.onload = function(){
-          sessionStorage.setItem('zip', btoa(e.target.result));
-          // TODO check if it is a zip file
-          var options = {};
-          options.testLevel = jQuery('.radio :checked').val();
-          options.rollbackOnError = jQuery('#rollback').is(':checked');
-          options.checkOnly = jQuery('#check').is(':checked');
-          dep.deployPackage(options);
-        };
-        reader.readAsBinaryString(file);
-      }
-    }
-    jQuery(this).css('border', '');
+    jQuery(this).removeClass('drop');
     return false;
   });
 
   jQuery('.retrieve').on('drop', function(e) {
-    console.log('dropped');
-    console.log(e);
-    if(e.originalEvent.dataTransfer){
-       if(e.originalEvent.dataTransfer.files.length) {
-         // Stop the propagation of the event
-         e.preventDefault();
-         e.stopPropagation();
-         dep.retrievePackage(e.originalEvent.dataTransfer.files[0]);
-       }
+    if(e.originalEvent.dataTransfer
+      && e.originalEvent.dataTransfer.files.length){
+       e.preventDefault();
+       e.stopPropagation();
+       var file = e.originalEvent.dataTransfer.files[0];
+       dep.retrievePackage({file:file,env:jQuery('#deploy-prod').is(':checked') ? 'login' : 'test'})
+       .then(HandleRetrieve.success)
+       .catch(HandleRetrieve.error);
     }
-    jQuery(this).css('border', '');
+    jQuery(this).removeClass('drop');
     return false;
   });
 
@@ -91,49 +96,47 @@ jQuery(function(){
   });
 });
 
-var Oauth2Settings = function(instanceUrl,accessToken) {
-  this.instanceUrl = instanceUrl;
-  this.accessToken = accessToken;
-}
+var ConnectionHelper = function() {};
+ConnectionHelper.prototype = function(){
+  var getConn = function(authOptions){
+    var options = localStorage.getItem(authOptions.prefix);
+    if(options) {
+      options = JSON.parse(options);
+      var conn = new jsforce.Connection({
+        instanceUrl : options.instanceUrl,
+        accessToken : options.accessToken,
+        proxyUrl : '/services/proxy'
+      });
+      conn.metadata.pollTimeout= 3000000;
+      return conn;
+    } else {
+      window.open('https://'+ authOptions.env + '.salesforce.com/services/oauth2/authorize?response_type=token&client_id='+encodeURIComponent(ConnectedAppConfig.clientId)+'&redirect_uri='+encodeURIComponent(ConnectedAppConfig.redirectUri)+'&scope=api&display=popup&state='+encodeURIComponent(JSON.stringify(authOptions)),'_self');
+    }
+  },
+  resetConn = function(prefix) {
+    localStorage.removeItem(prefix);
+  };
+  return {
+    getConn: getConn,
+    resetConn: resetConn
+  };
+}();
+var OAuthHelper = new ConnectionHelper();
 
-/*
-  Deployment class
-*/
-var Deployment = function(retrieve_config,deploy_config) {
+var Deployment = function() {
   this._tests = [];
-  this.retrieveConn;
-  this.deployConn;
-  if(typeof retrieve_config !== 'undefined'){
-    this.retrieveConn = new jsforce.Connection({
-      instanceUrl : retrieve_config.instanceUrl,
-      accessToken : retrieve_config.accessToken,
-      proxyUrl : '/services/proxy'
-    });
-    this.retrieveConn.metadata.pollTimeout= 3000000;
-  }
-  if(typeof deploy_config !== 'undefined'){
-    this.deployConn = new jsforce.Connection({
-      instanceUrl : deploy_config.instanceUrl,
-      accessToken : deploy_config.accessToken,
-      proxyUrl : '/services/proxy'
-    });
-    this.deployConn.metadata.pollTimeout= 3000000;
-  }
-}
-
+};
 Deployment.prototype = function(){
 
-  // Private members
-  var createPackageCSV = function(file){
+  var createPackageCSV = function(options){
     var that = this;
-    Papa.parse(file, {
-      complete: function(results) {
-        // init
+    return new Promise(function(resolve,reject){
+      Papa.parsePromise(options.file)
+      .then(function(results) {
         var package = {}
         package.types = [];
         package.version = '34.0';
         that._tests = [];
-
         var types = package.types;
         results.data.shift();
         results.data.forEach(function(row){
@@ -153,7 +156,7 @@ Deployment.prototype = function(){
             type = typeFound[0];
           }
           if(member &&
-          type.members.indexOf(member) === -1)    {
+          type.members.indexOf(member) === -1) {
           type.members.push(member);
             member = member.toLowerCase();
             if(typename === 'ApexClass' && member.indexOf("test") > -1){
@@ -161,129 +164,141 @@ Deployment.prototype = function(){
             }
           }
         });
-        doRetrieve.call(that, package);
-      }
+        options.package = package;
+        sessionStorage.setItem('retrieve-options',JSON.stringify(options));
+        resolve(options);
+      })
+      .catch(reject);
     });
   },
 
-  createPackageXML = function(file){
+  createPackageXML = function(options){
     var that = this;
-    var reader = new FileReader();
-    reader.onloadend = function(e){
-      var content = e.target.result;
-      console.log(content);
-      try{
-        if(content.indexOf('<?xml') !== -1){ // TODO make it works
-          jQuery('.retrieve-message').append('<p class="list-group-item list-group-item-error"><span class="badge alert-error pull-right">Error</span>Remove the "<?>" tags</p>').show(500);
-          return;
-        }
-        var package = getPropertyCaseInsensitive(jQuery.xml2json(content),'package');
-        delete package.$;
-        console.log(package);
-        // TODO Implement tests remember
-        if(package.types.constructor !== Array) {
-          var type = package.types;
-          package.types = [];
-          package.types.push(type);
-        }
-        package.types.forEach(function(type){
-          delete type.$;
-          if(typeof type.members !== 'object') {
-            type.members = [type.members];
+    return new Promise(function(resolve,reject){
+      var read = new Promise(function(rs,rj) {
+        var reader = new FileReader();
+        reader.onerror = rj;
+        reader.onload = rs;
+        reader.readAsText(options.file);
+      });
+      read.then()
+      .then(function(e){
+        var content = e.target.result;
+        try{
+          content = content.replace('<?xml version="1.0" encoding="UTF-8"?>','');
+          var package = getPropertyCaseInsensitive(jQuery.xml2json(content),'package');
+          delete package.$;
+          if(package.types.constructor !== Array) {
+            var type = package.types;
+            package.types = [];
+            package.types.push(type);
           }
-        });
-        doRetrieve.call(that,package);
-      } catch(e){
-        console.log(e);
-        jQuery('.retrieve-message').append('<p class="list-group-item list-group-item-error"><span class="badge alert-error pull-right">Error</span>'+htmlSpecialChars(''+e)+'</p>').show(500);
-      }
-    };
-    reader.readAsText(file);
+          package.types.forEach(function(type){
+            delete type.$;
+            if(typeof type.members !== 'object') {
+              type.members = [type.members];
+            }
+            if(type.name === 'ApexClass') {
+              type.members.forEach(function(mem){
+                mem = mem.toLowerCase();
+                if(mem.indexOf("test") > -1){
+                  that._tests.push(mem);
+                }
+              })
+            }
+          });
+          options.package = package;
+          sessionStorage.setItem('retrieve-options',JSON.stringify(options));
+          resolve(options);
+        } catch(e){
+          reject(htmlSpecialChars(''+e));
+        }
+      }).catch(reject);
+    });
   },
 
-  // Public members
-  retrievePackage = function(file){
-    if (!file) {
-        var error = 'No file selected';
-         jQuery('.retrieve-message').append('<p class="list-group-item list-group-item-error"><span class="badge alert-error pull-right">Error</span>'+error+'</p>').show(500);
-        return;
-    }
-    if(file.type === 'text/csv'){
-      createPackageCSV.call(this, file);
-    } else if(file.type === 'text/xml') {
-      createPackageXML.call(this, file);
-    }
+  retrievePackage = function(options){
+    return new Promise(function(resolve,reject){
+      optionsFromLocalStorage = JSON.parse(sessionStorage.getItem('retrieve-options'));
+      if(optionsFromLocalStorage && optionsFromLocalStorage.package) {
+        return doRetrieve(optionsFromLocalStorage)
+        .then(resolve)
+        .catch(reject);
+      }
+      if (!options.file) {return reject('No file selected');}
+      var createPackage;
+      if(options.file.type === 'text/csv'){
+        createPackage = createPackageCSV;
+      } else if(file.type === 'text/xml') {
+        createPackage = createPackageXML;
+      } else {
+        reject('File type not supported');
+      }
+      createPackage(options)
+      .then(doRetrieve)
+      .then(resolve)
+      .catch(reject);
+    })
   },
 
   deployPackage = function(options) {
-    var that = this;
-    if(typeof this.deployConn === 'undefined') {
-      var state = {
-        status : '1',
-        instanceUrl : retrieve_config.instanceUrl,
-        accessToken : retrieve_config.accessToken
-      };
-      var url = 'https://'+(jQuery('#retrieve-prod').is(':checked') ? 'login' : 'test') + '.salesforce.com/services/oauth2/authorize?response_type=token&client_id='+Oauth2AppConfig.clientId+'&redirect_uri='+Oauth2AppConfig.redirectUri+'&prompt=login&display=popup&state='+encodeURIComponent(JSON.stringify(state));
-      window.open(url,'_self');
-      return;
-    }
-
-    if(options.testLevel === 'RunSpecifiedTests') {
-      options.runTests = this._tests;
-    }
-    this.deployConn.metadata.deploy(sessionStorage.getItem('zip'), options)
-    .complete(function(err, result) {
-      if (err) {
-        jQuery('.deploy-message').append('<p class="list-group-item list-group-item-error"><span class="badge alert-error pull-right">Error</span>'+err+'</p>').show(500);
-        return;
-      }
-      jQuery('.deploy-message').append('<p class="list-group-item list-group-item-success"><span class="badge alert-success pull-right">Success</span>'+result.status+'</p>').show(500);
-      jQuery('#deploy-info').html('<p>'+
-          'done ? :' + result.done + ', \n'
-      + 'success ? : ' + result.true + ', \n'
-      + 'state : ' + result.state + ', \n'
-      + 'component errors: ' + result.numberComponentErrors + ', \n'
-      + 'components deployed: ' + result.numberComponentsDeployed + ', \n'
-      + 'tests completed: ' + result.numberTestsCompleted
-      +'</p>').show(500);
-      that.deployConn.metadata.checkDeployStatus(result.id,true,function(error,res){
-        if (err) {
-          jQuery('.deploy-message').append('<p class="list-group-item list-group-item-error"><span class="badge alert-error pull-right">Error</span>'+err+'</p>').show(500);
-          return;
-        }
-        jQuery('#deploy-info').append('<p>'+JSON.stringify(res.details,null,1)+'</p>');
-      })
+    return new Promise(function(resolve,reject) {
+      var conn = OAuthHelper.getConn({prefix:'deploy',env:options.env});
+      if(!conn) {resolve('Authent in progress')}
+      delete options.env;
+      conn.metadata.deploy(Base64String.decompress(sessionStorage.getItem('zip')), options)
+      .complete(true,function(error, result) {
+        sessionStorage.removeItem('zip');
+        if (error) {return reject(error);}
+        resolve(result);
+      });
     });
   },
 
-  doRetrieve = function(package) {
-    var that = this;
-    if(typeof this.retrieveConn === 'undefined') {
-      sessionStorage.setItem('package',JSON.stringify(package));
-      var state = {status : '0'};
-      var url = 'https://'+(jQuery('#retrieve-prod').is(':checked') ? 'login' : 'test') + '.salesforce.com/services/oauth2/authorize?response_type=token&client_id='+Oauth2AppConfig.clientId+'&redirect_uri='+Oauth2AppConfig.redirectUri+'&prompt=login&display=popup&state='+encodeURIComponent(JSON.stringify(state));
-      window.open(url,'_self');
-      return;
+  doRetrieve = function(options) {
+    if(!options.package){
+      options.package = JSON.parse(sessionStorage.getItem('package'));
     }
-    jQuery('.retrieve-message').append('<p class="list-group-item list-group-item-success"><span class="badge alert-success pull-right">Success</span>Package parsed</p>').show(500);
-    jQuery('.retrieve-info').html(JSON.stringify(package, null,1)).show(500);
-    this.retrieveConn.metadata.retrieve({ unpackaged:package })
-    .complete(function(err, result) {
-      if (err) {
-        jQuery('.retrieve-message').append('<p class="list-group-item list-group-item-error"><span class="badge alert-error pull-right">Error</span>'+err+'</p>').show(500);
-        return;
-      }
-      var a = document.createElement('a'); a.href = "data:application/zip;base64," + result.zipFile; a.download = (new Date()).toLocaleString()+'.zip'; a.click();
-      jQuery('.retrieve-message').append('<p class="list-group-item list-group-item-success"><span class="badge alert-success pull-right">Success</span>'+result.status+'</p>').show(500);
+    return new Promise(function(resolve,reject){
+      var conn = OAuthHelper.getConn({prefix:'retrieve',env:options.env});
+      if(!conn) {resolve('Authent in progress')}
+      conn.metadata.retrieve({ unpackaged:options.package })
+      .complete(function(err, result) {
+        sessionStorage.removeItem('package');
+        if (err) {return reject(err);}
+        var a = document.createElement('a'); a.href = "data:application/zip;base64," + result.zipFile; a.download = (new Date()).toLocaleString()+'.zip'; a.click();
+        resolve(options.package);
+      });
     });
   };
 
   return {
     retrievePackage : retrievePackage,
-    deployPackage : deployPackage,
-    doRetrieve : doRetrieve
+    deployPackage : deployPackage
   };
 }();
+
+var HandleRetrieve = {
+  success : function(res){
+    jQuery('.retrieve-message').append('<pre class="alert-success">'+JSON.stringify(res,null,2)+'</pre>').show(500);
+  }, error : function(err){
+    jQuery('.retrieve-message').append('<p class="alert-error">'+JSON.stringify(err,null,2)+'</p>').show(500);
+  }
+};
+
+var HandleDeploy = {
+  success : function(res){
+    jQuery('.deploy-message').append('<pre class="alert-success">'+JSON.stringify(res,null,2)+'</pre>').show(500);
+  }, error : function(err){
+    jQuery('.deploy-message').append('<p class="alert-error">'+JSON.stringify(err,null,2)+'</p>').show(500);
+  }
+};
+
+Papa.parsePromise = function(file) {
+  return new Promise(function(resolve, reject) {
+    Papa.parse(file, { complete: resolve, error: reject });
+  });
+};
 
 var getPropertyCaseInsensitive = function (obj, property) {
   if(typeof obj === 'object'){
