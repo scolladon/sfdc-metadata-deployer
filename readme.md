@@ -40,7 +40,7 @@ Here the open source project used:
 * [bootstrap] - the most popular HTML, CSS, and JS framework for developing responsive, mobile first projects on the web
 * [pace] - an automatic web page progress bar
 * [papaparse] - the powerful, in-browser CSV parser for big boys and girls
-* [jQuery] - duh
+* [jQuery] - write less, do more 
 * [xml2json] - a simple jQuery plugin that converts XML data
 * [Gulp] - the streaming build system
 * [lz-string] - JavaScript compression, fast!
