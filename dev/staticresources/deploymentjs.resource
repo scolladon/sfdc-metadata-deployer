@@ -110,7 +110,7 @@ ConnectionHelper.prototype = function(){
       conn.metadata.pollTimeout= 3000000;
       return conn;
     } else {
-      window.open('https://'+ authOptions.env + '.salesforce.com/services/oauth2/authorize?response_type=token&client_id='+encodeURIComponent(ConnectedAppConfig.clientId)+'&redirect_uri='+encodeURIComponent(ConnectedAppConfig.redirectUri)+'&scope=api&display=popup&state='+encodeURIComponent(JSON.stringify(authOptions)),'_self');
+      window.open('https://'+ authOptions.env + '.salesforce.com/services/oauth2/authorize?response_type=token&client_id='+encodeURIComponent(ConnectedAppConfig.clientId)+'&redirect_uri='+encodeURIComponent(ConnectedAppConfig.redirectUri)+'&scope=api&prompt=login%20consent&state='+encodeURIComponent(JSON.stringify(authOptions)),'_self');
     }
   },
   resetConn = function(prefix) {
