@@ -219,6 +219,7 @@ Deployment.prototype = function(){
 
   retrievePackage = function(options){
     return new Promise(function(resolve,reject){
+      // TODO handle arguments
       optionsFromLocalStorage = JSON.parse(sessionStorage.getItem('retrieve-options'));
       if(optionsFromLocalStorage && optionsFromLocalStorage.package) {
         return doRetrieve(optionsFromLocalStorage)
@@ -249,7 +250,9 @@ Deployment.prototype = function(){
       conn.metadata.deploy(Base64String.decompress(sessionStorage.getItem('zip')), options)
       .complete(true,function(error, result) {
         sessionStorage.removeItem('zip');
+        localStorage.removeItem('deploy');
         if (error) {return reject(error);}
+
         resolve(result);
       });
     });
@@ -265,6 +268,7 @@ Deployment.prototype = function(){
       conn.metadata.retrieve({ unpackaged:options.package })
       .complete(function(err, result) {
         sessionStorage.removeItem('package');
+        localStorage.removeItem('retrieve');
         if (err) {return reject(err);}
         var a = document.createElement('a'); a.href = "data:application/zip;base64," + result.zipFile; a.download = (new Date()).toLocaleString()+'.zip'; a.click();
         resolve(options.package);
