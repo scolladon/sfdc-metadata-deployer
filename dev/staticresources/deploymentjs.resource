@@ -246,7 +246,7 @@ Deployment.prototype = function(){
   deployPackage = function(options) {
     return new Promise(function(resolve,reject) {
       var conn = OAuthHelper.getConn({prefix:'deploy',env:options.env});
-      if(!conn) {resolve('Authent in progress')}
+      if(!conn) {return resolve('Authent in progress')}
       delete options.env;
       conn.metadata.deploy(Base64String.decompress(sessionStorage.getItem('zip')), options)
       .complete(true,function(error, result) {
@@ -265,7 +265,7 @@ Deployment.prototype = function(){
     }
     return new Promise(function(resolve,reject){
       var conn = OAuthHelper.getConn({prefix:'retrieve',env:options.env});
-      if(!conn) {resolve('Authent in progress')}
+      if(!conn) {return resolve('Authent in progress')}
       conn.metadata.retrieve({ unpackaged:options.package })
       .complete(function(err, result) {
         sessionStorage.removeItem('package');
