@@ -228,9 +228,10 @@ Deployment.prototype = function(){
       }
       if (!options.file) {return reject('No file selected');}
       var createPackage;
-      if(options.file.type === 'text/csv'){
+      var extension = options.file.name.split('.').pop();
+      if(extension === 'csv'){
         createPackage = createPackageCSV;
-      } else if(file.type === 'text/xml') {
+      } else if(extension === 'xml') {
         createPackage = createPackageXML;
       } else {
         reject('File type not supported');
